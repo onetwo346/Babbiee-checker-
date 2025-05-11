@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Baby Checker - AI-powered facial analysis to detect pregnancy-related changes." />
+  <title>Baby Checker</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- React CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel CDN for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Framer Motion CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/10.16.4/framer-motion.min.js"></script>
+  <!-- Face-API.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+  <style>
+    /* Custom futuristic font and glow effects */
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background: linear-gradient(135deg, #1e3a8a, #4c1d95);
+      color: #ffffff;
+      min-height: 100vh;
+      margin: 0;
+      overflow-x: hidden;
+    }
+    .glow {
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4);
+    }
+    .pulsate {
+      animation: pulsate 1.5s ease-in-out infinite;
+    }
+    @keyframes pulsate {
+      0% { transform: scale(1); box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
+      50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(59, 130, 246, 1); }
+      100% { transform: scale(1); box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    // React components for Baby Checker
+    const { useState, useEffect } = React;
+
+    // Intro Page Component
+    const IntroPage = ({ onStart }) => {
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
+          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 animate-pulse">
+            Baby Checker
+          </h1>
+          <p className="text-lg md:text-2xl text-gray-200 mb-8 max-w-2xl">
+            Discover potential pregnancy signs through cutting-edge AI facial analysis. 
+            Simply allow camera access, and our app will scan your facial features 
+            in real-time to generate an instant report. <br />
+            <span className="text-sm italic">*Not a medical diagnosis. Consult a doctor for confirmation.</span>
+          </p>
+          <button
+            onClick={onStart}
+            className="bg-blue-600 text-white font-bold py-3 px-6 rounded-full glow pulsate hover:bg-blue-700 transition duration-300"
+          >
+            Tap to Begin
+          </button>
+        </div>
+      );
+    };
+
+    // Main App Component
+    const MainApp = () => {
+      const [isScanning, setIsScanning] = useState(false);
+      const [report, setReport] = useState(null);
+
+      // Load Face-API.js models
+      useEffect(() => {
+        async function loadModels() {
+          await faceapi.nets.tinyFaceDetector.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+          await faceapi.nets.faceLandmark68Net.loadFromUri('https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model/');
+          console.log('Face-API.js models loaded');
+        }
+        loadModels();
+      }, []);
+
+      // Start camera and scanning
+      const startScanning = async () => {
+        setIsScanning(true);
+        const video = document.getElementById('video');
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+          video.srcObject = stream;
+        } catch (err) {
+          console.error('Camera access denied:', err);
+          alert('Please allow camera access to proceed.');
+          setIsScanning(false);
+        }
+      };
+
+      // Analyze face (placeholder for AI model)
+      const analyzeFace = async () => {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const context = canvas.getContext('2d');
+
+        // Detect face
+        const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
+          .withFaceLandmarks();
+
+        if (detections.length > 0) {
+          // Placeholder: AI model analysis (e.g., TensorFlow.js)
+          // Assume model returns a probability score for pregnancy-related changes
+          const mockResult = {
+            probability: 0.72,
+            details: {
+              skinTexture: 'Increased smoothness detected',
+              puffiness: 'Mild puffiness around cheeks',
+              pigmentation: 'Slight hyperpigmentation observed'
+            }
+          };
+          setReport(mockResult);
+          setIsScanning(false);
+        } else {
+          alert('No face detected. Please ensure your face is visible.');
+        }
+      };
+
+      // Stop scanning
+      const stopScanning = () => {
+        const video = document.getElementById('video');
+        const stream = video.srcObject;
+        if (stream) {
+          stream.getTracks().forEach(track => track.stop());
+        }
+        setIsScanning(false);
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <h1 className="text-3xl md:text-5xl font-bold text-white mb-6">
+            Baby Checker Scan
+          </h1>
+
+          {!isScanning && !report && (
+            <button
+              onClick={startScanning}
+              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-full glow hover:bg-blue-700 transition duration-300"
+            >
+              Start Scan
+            </button>
+          )}
+
+          {isScanning && (
+            <div className="relative flex flex-col items-center">
+              <video
+                id="video"
+                autoPlay
+                className="w-full max-w-md rounded-lg glow"
+              ></video>
+              <canvas id="canvas" className="hidden"></canvas>
+              <button
+                onClick={analyzeFace}
+                className="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-green-700 transition duration-300"
+              >
+                Analyze Now
+              </button>
+              <button
+                onClick={stopScanning}
+                className="mt-2 bg-red-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-red-700 transition duration-300"
+              >
+                Stop
+              </button>
+            </div>
+          )}
+
+          {report && (
+            <div className="bg-gray-900 bg-opacity-80 p-6 rounded-lg max-w-md w-full glow">
+              <h2 className="text-2xl font-bold mb-4">Analysis Report</h2>
+              <p className="text-lg">
+                <strong>Probability of Pregnancy Signs:</strong> {(report.probability * 100).toFixed(0)}%
+              </p>
+              <ul className="mt-4">
+                {Object.entries(report.details).map(([key, value]) => (
+                  <li key={key} className="text-gray-300">
+                    <strong>{key}:</strong> {value}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-sm italic text-gray-400 mt-4">
+                *This is not a medical diagnosis. Please consult a healthcare professional.
+              </p>
+              <button
+                onClick={() => setReport(null)}
+                className="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-blue-700 transition duration-300"
+              >
+                Scan Again
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    };
+
+    // App Component (Handles Intro to Main App Transition)
+    const App = () => {
+      const [showIntro, setShowIntro] = useState(true);
+
+      return (
+        <div>
+          {showIntro ? (
+            <IntroPage onStart={() => setShowIntro(false)} />
+          ) : (
+            <MainApp />
+          )}
+        </div>
+      );
+    };
+
+    // Render the App
+    ReactDOM.render(<App />, document.getElementById('root'));
+  </script>
+</body>
+</html>
