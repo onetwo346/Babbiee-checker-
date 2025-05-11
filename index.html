@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="Baby Checker - AI-powered facial analysis to detect pregnancy-related changes." />
+  <meta name="description" content="Baby Checker - AI-powered facial analysis with AR results for pregnancy signs." />
   <title>Baby Checker</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16,55 +16,120 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/framer-motion/10.16.4/framer-motion.min.js"></script>
   <!-- Face-API.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api/dist/face-api.min.js"></script>
+  <!-- Three.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
   <style>
-    /* Custom futuristic font and glow effects */
-    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Poppins:wght@300;600&display=swap');
     body {
       font-family: 'Orbitron', sans-serif;
-      background: linear-gradient(135deg, #1e3a8a, #4c1d95);
+      background: linear-gradient(135deg, #0f172a, #4c1d95);
       color: #ffffff;
       min-height: 100vh;
       margin: 0;
       overflow-x: hidden;
     }
-    .glow {
-      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(59, 130, 246, 0.4);
+    .neon-glow {
+      text-shadow: 0 0 10px rgba(59, 130, 246, 0.8), 0 0 20px rgba(59, 130, 246, 0.4);
     }
-    .pulsate {
+    .holographic-btn {
+      background: linear-gradient(45deg, #3b82f6, #ec4899);
+      box-shadow: 0 0 20px rgba(59, 130, 246, 0.8);
       animation: pulsate 1.5s ease-in-out infinite;
     }
     @keyframes pulsate {
       0% { transform: scale(1); box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
-      50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(59, 130, 246, 1); }
+      50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(236, 72, 153, 1); }
       100% { transform: scale(1); box-shadow: 0 0 10px rgba(59, 130, 246, 0.6); }
+    }
+    .ar-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      pointer-events: none;
+      color: #ec4899;
+      font-family: 'Poppins', sans-serif;
+      text-shadow: 0 0 10px rgba(236, 72, 153, 0.8);
+    }
+    #three-canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: -1;
+      opacity: 0.3;
     }
   </style>
 </head>
 <body>
   <div id="root"></div>
+  <canvas id="three-canvas"></canvas>
 
   <script type="text/babel">
-    // React components for Baby Checker
-    const { useState, useEffect } = React;
+    const { useState, useEffect, useRef } = React;
+
+    // Three.js Background Particles
+    const ThreeBackground = () => {
+      const canvas = document.getElementById('three-canvas');
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      const particles = new THREE.BufferGeometry();
+      const particleCount = 1000;
+      const posArray = new Float32Array(particleCount * 3);
+      for (let i = 0; i < particleCount * 3; i++) {
+        posArray[i] = (Math.random() - 0.5) * 100;
+      }
+      particles.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+
+      const material = new THREE.PointsMaterial({
+        size: 0.1,
+        color: 0x3b82f6,
+        transparent: true,
+        opacity: 0.6,
+      });
+      const particleSystem = new THREE.Points(particles, material);
+      scene.add(particleSystem);
+
+      camera.position.z = 10;
+
+      const animate = () => {
+        requestAnimationFrame(animate);
+        particleSystem.rotation.y += 0.001;
+        renderer.render(scene, camera);
+      };
+      animate();
+
+      window.addEventListener('resize', () => {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+      });
+    };
 
     // Intro Page Component
     const IntroPage = ({ onStart }) => {
+      useEffect(() => {
+        ThreeBackground();
+      }, []);
+
       return (
         <div className="flex flex-col items-center justify-center min-h-screen text-center px-4">
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 animate-pulse">
+          <h1 className="text-5xl md:text-7xl font-bold neon-glow mb-6">
             Baby Checker
           </h1>
-          <p className="text-lg md:text-2xl text-gray-200 mb-8 max-w-2xl">
-            Discover potential pregnancy signs through cutting-edge AI facial analysis. 
-            Simply allow camera access, and our app will scan your facial features 
-            in real-time to generate an instant report. <br />
-            <span className="text-sm italic">*Not a medical diagnosis. Consult a doctor for confirmation.</span>
+          <p className="text-lg md:text-2xl text-gray-200 mb-8 max-w-2xl font-['Poppins']">
+            Darling, unlock the secrets of your glow! Our AI scans your radiant face 
+            with futuristic precision, revealing possible pregnancy signs in a dazzling 
+            augmented reality experience. Step into the future and see your beauty 
+            transformed. <br />
+            <span className="text-sm italic">*Not medical advice—consult your doctor, love.</span>
           </p>
           <button
             onClick={onStart}
-            className="bg-blue-600 text-white font-bold py-3 px-6 rounded-full glow pulsate hover:bg-blue-700 transition duration-300"
+            className="holographic-btn text-white font-bold py-4 px-8 rounded-full text-lg hover:opacity-90 transition duration-300"
           >
-            Tap to Begin
+            Begin Your Journey
           </button>
         </div>
       );
@@ -74,6 +139,8 @@
     const MainApp = () => {
       const [isScanning, setIsScanning] = useState(false);
       const [report, setReport] = useState(null);
+      const videoRef = useRef(null);
+      const canvasRef = useRef(null);
 
       // Load Face-API.js models
       useEffect(() => {
@@ -85,115 +152,132 @@
         loadModels();
       }, []);
 
-      // Start camera and scanning
+      // Start camera
       const startScanning = async () => {
         setIsScanning(true);
-        const video = document.getElementById('video');
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-          video.srcObject = stream;
+          videoRef.current.srcObject = stream;
         } catch (err) {
           console.error('Camera access denied:', err);
-          alert('Please allow camera access to proceed.');
+          alert('Camera access is required for scanning.');
           setIsScanning(false);
         }
       };
 
-      // Analyze face (placeholder for AI model)
+      // Analyze face and render AR overlay
       const analyzeFace = async () => {
-        const video = document.getElementById('video');
-        const canvas = document.getElementById('canvas');
+        const video = videoRef.current;
+        const canvas = canvasRef.current;
         const context = canvas.getContext('2d');
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-        // Detect face
         const detections = await faceapi.detectAllFaces(video, new faceapi.TinyFaceDetectorOptions())
           .withFaceLandmarks();
 
         if (detections.length > 0) {
-          // Placeholder: AI model analysis (e.g., TensorFlow.js)
-          // Assume model returns a probability score for pregnancy-related changes
+          // Mock AI model result (replace with TensorFlow.js model)
           const mockResult = {
-            probability: 0.72,
+            probability: 0.78,
             details: {
-              skinTexture: 'Increased smoothness detected',
-              puffiness: 'Mild puffiness around cheeks',
-              pigmentation: 'Slight hyperpigmentation observed'
-            }
+              skinGlow: 'Enhanced radiance detected',
+              cheekPuffiness: 'Subtle volume increase',
+              pigmentation: 'Mild hyperpigmentation'
+            },
+            landmarks: detections[0].landmarks.positions
           };
           setReport(mockResult);
-          setIsScanning(false);
+
+          // Draw AR overlay
+          context.clearRect(0, 0, canvas.width, canvas.height);
+          context.font = '20px Poppins';
+          context.fillStyle = '#ec4899';
+          context.fillText(`Pregnancy Signs: ${(mockResult.probability * 100).toFixed(0)}%`, 20, 50);
+          mockResult.landmarks.forEach(point => {
+            context.beginPath();
+            context.arc(point.x, point.y, 2, 0, 2 * Math.PI);
+            context.fill();
+          });
         } else {
-          alert('No face detected. Please ensure your face is visible.');
+          alert('No face detected. Please align your face with the camera.');
         }
       };
 
       // Stop scanning
       const stopScanning = () => {
-        const video = document.getElementById('video');
-        const stream = video.srcObject;
+        const stream = videoRef.current.srcObject;
         if (stream) {
           stream.getTracks().forEach(track => track.stop());
         }
         setIsScanning(false);
+        setReport(null);
       };
 
+      // Real-time AR rendering
+      useEffect(() => {
+        let interval;
+        if (isScanning && !report) {
+          interval = setInterval(analyzeFace, 1000);
+        }
+        return () => clearInterval(interval);
+      }, [isScanning, report]);
+
       return (
-        <div className="flex flex-col items-center justify-center min-h-screen p-4">
-          <h1 className="text-3xl md:text-5xl font-bold text-white mb-6">
-            Baby Checker Scan
+        <div className="flex flex-col items-center justify-center min-h-screen p-4 relative">
+          <h1 className="text-4xl md:text-6xl font-bold neon-glow mb-6">
+            Scan Your Glow
           </h1>
 
           {!isScanning && !report && (
             <button
               onClick={startScanning}
-              className="bg-blue-600 text-white font-bold py-3 px-6 rounded-full glow hover:bg-blue-700 transition duration-300"
+              className="holographic-btn text-white font-bold py-3 px-6 rounded-full text-lg"
             >
-              Start Scan
+              Start Scanning
             </button>
           )}
 
           {isScanning && (
             <div className="relative flex flex-col items-center">
               <video
-                id="video"
+                ref={videoRef}
                 autoPlay
-                className="w-full max-w-md rounded-lg glow"
+                className="w-full max-w-md rounded-lg shadow-lg"
               ></video>
-              <canvas id="canvas" className="hidden"></canvas>
-              <button
-                onClick={analyzeFace}
-                className="mt-4 bg-green-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-green-700 transition duration-300"
-              >
-                Analyze Now
-              </button>
+              <canvas
+                ref={canvasRef}
+                className="ar-overlay w-full max-w-md rounded-lg"
+                style={{ position: 'absolute', top: 0, left: 0 }}
+              ></canvas>
               <button
                 onClick={stopScanning}
-                className="mt-2 bg-red-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-red-700 transition duration-300"
+                className="mt-4 bg-red-600 text-white font-bold py-2 px-4 rounded-full holographic-btn"
               >
-                Stop
+                Stop Scan
               </button>
             </div>
           )}
 
           {report && (
-            <div className="bg-gray-900 bg-opacity-80 p-6 rounded-lg max-w-md w-full glow">
-              <h2 className="text-2xl font-bold mb-4">Analysis Report</h2>
-              <p className="text-lg">
-                <strong>Probability of Pregnancy Signs:</strong> {(report.probability * 100).toFixed(0)}%
+            <div className="bg-gray-900 bg-opacity-80 p-6 rounded-lg max-w-md w-full holographic-btn mt-4">
+              <h2 className="text-2xl font-bold neon-glow mb-4">Your Radiance Report</h2>
+              <p className="text-lg font-['Poppins']">
+                <strong>Pregnancy Signs:</strong> {(report.probability * 100).toFixed(0)}%
               </p>
               <ul className="mt-4">
                 {Object.entries(report.details).map(([key, value]) => (
-                  <li key={key} className="text-gray-300">
+                  <li key={key} className="text-gray-300 font-['Poppins']">
                     <strong>{key}:</strong> {value}
                   </li>
                 ))}
               </ul>
-              <p className="text-sm italic text-gray-400 mt-4">
-                *This is not a medical diagnosis. Please consult a healthcare professional.
+              <p className="text-sm italic text-gray-400 mt-4 font-['Poppins']">
+                *This is not medical advice. Consult a professional, darling.
               </p>
               <button
                 onClick={() => setReport(null)}
-                className="mt-4 bg-blue-600 text-white font-bold py-2 px-4 rounded-full glow hover:bg-blue-700 transition duration-300"
+                className="mt-4 holographic-btn text-white font-bold py-2 px-4 rounded-full"
               >
                 Scan Again
               </button>
@@ -203,7 +287,7 @@
       );
     };
 
-    // App Component (Handles Intro to Main App Transition)
+    // App Component
     const App = () => {
       const [showIntro, setShowIntro] = useState(true);
 
@@ -218,7 +302,7 @@
       );
     };
 
-    // Render the App
+    // Render App
     ReactDOM.render(<App />, document.getElementById('root'));
   </script>
 </body>
